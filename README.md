@@ -1,1 +1,1 @@
-# Contains Communcations-Hub Firmware
+# Contains Communications-Hub Firmware
