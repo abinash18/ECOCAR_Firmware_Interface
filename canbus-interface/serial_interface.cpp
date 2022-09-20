@@ -50,3 +50,7 @@ extern "C" int print_ports()
 
     return 0;
 }
+
+extern "C" uint64_t get_first_active_port() {
+    return 0;
+}
