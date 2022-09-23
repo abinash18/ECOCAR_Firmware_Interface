@@ -4,6 +4,8 @@ add_library(
     CANBUS_INTERFACE SHARED # The library name is libCANBUS_INTERFACE and it is compiled as a shared object (.so)
     serial_interface.h
     serial_interface.cpp
+    cbi.h
+    cbi.cpp
 )
 
 set_target_properties(CANBUS_INTERFACE PROPERTIES CMAKE_POSITION_INDEPENDENT_CODE ON)

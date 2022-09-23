@@ -4,5 +4,5 @@
 
 int main(int argc, char **argv)
 {
-    return print_ports();
+    return 0;
 }

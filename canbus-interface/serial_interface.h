@@ -1,10 +1,21 @@
 #include <libserialport.h>
 #include <stdint.h>
-extern "C" int print_ports();
-
-struct port
+#ifdef __cplusplus
+extern "C"
 {
-    struct sp_port *device;
-};
+#endif // __cplusplus
+    int print_ports(char test[]);
 
-extern "C" uint64_t get_first_active_port();
+    struct port
+    {
+        struct sp_port *device;
+    };
+
+    uint64_t get_first_active_port();
+
+    long open_channel(int baud, const char *port_name);
+
+    void free_lib();
+#ifdef __cplusplus
+}
+#endif // __cplusplus
