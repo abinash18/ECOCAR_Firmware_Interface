@@ -131,21 +131,26 @@ extern "C"
         return 0;
     }
 
+    /**
+     * Returns a device 
+     */
     long open_channel(int baud, const char *port_name)
     {
         int *handle = nullptr;
         struct sp_port *port;
-        // check(sp_get_port_by_name(port_name, &port));
+        check(sp_get_port_by_name(port_name, &port));
         printf("Opening port.\n");
-        // check(sp_open(port, SP_MODE_READ_WRITE));
-
-        printf("Setting port to 125000 8N1, no flow control.\n");
-        // check(sp_set_baudrate(port, 125000));
-        // check(sp_set_bits(port, 8));
-        // check(sp_set_parity(port, SP_PARITY_NONE));
-        // check(sp_set_stopbits(port, 1));
-        // check(sp_set_flowcontrol(port, SP_FLOWCONTROL_NONE));
-        return (long)port;
+        check(sp_open(port, SP_MODE_READ_WRITE));
+        printf("Setting port to %i 8N1, no flow control.\n", baud);
+        check(sp_set_baudrate(port, baud));
+        check(sp_set_bits(port, 8));
+        check(sp_set_parity(port, SP_PARITY_NONE));
+        check(sp_set_stopbits(port, 1));
+        check(sp_set_flowcontrol(port, SP_FLOWCONTROL_NONE));
+        struct device *p;
+        
+        (*p).port = port;
+        return (long)p;
     }
 
     void free_lib()

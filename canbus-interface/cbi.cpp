@@ -10,7 +10,7 @@ extern "C"
 
     int cbi_get(int *port_pointer)
     {
-        port *device = (port *)port_pointer;
+        device *p = (device *)port_pointer;
         return 0;
     }
 #ifdef __cplusplus

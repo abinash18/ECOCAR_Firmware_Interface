@@ -6,9 +6,9 @@ extern "C"
 #endif // __cplusplus
     int print_ports(char test[]);
 
-    struct port
+    struct device
     {
-        struct sp_port *device;
+        struct sp_port *port;
     };
 
     uint64_t get_first_active_port();
