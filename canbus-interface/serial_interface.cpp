@@ -10,9 +10,9 @@ extern "C"
      * Search ports for serial devices, copied from examples folder in libserialport library source.
      *
      */
-    int print_ports(char test[])
+    int print_ports()
     {
-        printf("%s", test);
+        
         printf("Looking for device...\n");
         /* A pointer to a null-terminated array of pointers to
          * struct sp_port, which will contain the ports found.*/
@@ -70,7 +70,7 @@ extern "C"
         struct sp_port *port;
         check(sp_get_port_by_name(port_name, &port));
         printf("Opening port.\n");
-        check(sp_open(port, SP_MODE_READ_WRITE));
+        check(sp_open(port, SP_MODE_READ));
         printf("Setting port to %i 8N1, no flow control.\n", baud);
         check(sp_set_baudrate(port, baud));
         check(sp_set_bits(port, 8));

@@ -1,0 +1,166 @@
+// #include "canbus-interface/serial_interface.h"
+
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include <string.h>
+
+// int main(int argc, char **argv)
+// {
+//     print_port();
+//     void* device = open_channel(115200, "/dev/ttyS2");
+//     print_port_info(device);
+//     print_port_config(device);
+//     /* The data we will send. */
+// 	char *data = "Test";
+// 	int size = strlen(data);
+//     struct sp_port *rx_port = (struct sp_port*)device;
+//     /* We'll allow a 1 second timeout for send and receive. */
+// 	unsigned int timeout = 1000;
+   
+//     while (1000) {
+//         // Recive Serial
+//         /* Allocate a buffer to receive data. */
+// 		char *buf = (char*)malloc(size + 1);
+//         int result;
+// 		/* Try to receive the data on the other port. */
+// 		printf("Receiving %d bytes on port %s.\n",
+// 				size, sp_get_port_name(rx_port));
+// 		result = check(sp_blocking_read(rx_port, buf, size, timeout));
+
+// 		/* Check whether we received the number of bytes we wanted. */
+// 		if (result == size)
+// 			printf("Received %d bytes successfully.\n", size);
+// 		else
+// 			printf("Timed out, %d/%d bytes received.\n", result, size);
+
+// 		/* Check if we received the same data we sent. */
+// 		buf[result] = '\0';
+// 		printf("Received '%s'.\n", buf);
+
+// 		/* Free receive buffer. */
+// 		free(buf);
+//     }
+
+//     free_lib(device);
+//     return 0;
+// }
+
+#include <libserialport.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* Example of how to send and receive data.
+ *
+ * This example file is released to the public domain. */
+
+/* Helper function for error handling. */
+int check(enum sp_return result);
+
+int main(int argc, char **argv)
+{
+	/* This example can be used with one or two port. With one port, it
+	 * will send data and try to receive it on the same port. This can be
+	 * done by connecting a single wire between the TX and RX pins of the
+	 * port.
+	 *
+	 * Alternatively it can be used with two serial port connected to each
+	 * other, so that data can be sent on one and received on the other.
+	 * This can be done with two port with TX/RX cross-connected, e.g. by
+	 * a "null modem" cable, or with a pair of interconnected virtual port,
+	 * such as those created by com0com on Windows or tty0tty on Linux. */
+
+	/* The port we will use. */
+	struct sp_port *port;
+	printf("Looking for port %s.\n", "/dev/ttyS2");
+	check(sp_get_port_by_name("/dev/ttyS2", &port));
+	printf("Opening port.\n");
+	check(sp_open(port, SP_MODE_READ));
+	printf("Setting port to 125000 8N1, no flow control.\n");
+	check(sp_set_baudrate(port, 125000));
+	check(sp_set_bits(port, 8));
+	check(sp_set_parity(port, SP_PARITY_NONE));
+	check(sp_set_stopbits(port, 1));
+	check(sp_set_flowcontrol(port, SP_FLOWCONTROL_NONE));
+		struct sp_port *tx_port = port;
+		struct sp_port *rx_port = port;
+
+		// /* The data we will send. */
+		// char *data = "Test\n";
+		// int size = strlen(data);
+		// /* We'll allow a 1 second timeout for send and receive. */
+		// unsigned int timeout = 100;
+
+		// /* On success, sp_blocking_write() and sp_blocking_read()
+		//  * return the number of bytes sent/received before the
+		//  * timeout expired. We'll store that result here. */
+		int result;
+
+		// // /* Send data. */
+		// // printf("Sending '%s' (%d bytes) on port %s.\n",
+		// // 		data, size, sp_get_port_name(tx_port));
+		// // result = check(sp_blocking_write(tx_port, data, size, timeout));
+
+		// // /* Check whether we sent all of the data. */
+		// // if (result == size)
+		// // 	printf("Sent %d bytes successfully.\n", size);
+		// // else
+		// // 	printf("Timed out, %d/%d bytes sent.\n", result, size);
+
+		/* Allocate a buffer to receive data. */
+		char *buf =(char*) malloc(5);
+		int size = 5;
+		/* Try to receive the data on the other port. */
+		while (true){
+			printf("Receiving %d bytes on port %s.\n",
+					size, sp_get_port_name(rx_port));
+			result = check(sp_blocking_read(rx_port, buf, size, 1000));
+
+			/* Check whether we received the number of bytes we wanted. */
+			if (result == size)
+				printf("Received %d bytes successfully.\n", size);
+			else
+				printf("Timed out, %d/%d bytes received.\n", result, size);
+			/* Check if we received the same data we sent. */
+			//buf[result] = '\0';
+			printf("Received '%s'.\n", buf);
+		}
+		/* Free receive buffer. */
+		free(buf);
+	
+
+	/* Close port and free resources. */
+	
+		check(sp_close(port));
+		sp_free_port(port);
+	
+
+	return 0;
+}
+
+/* Helper function for error handling. */
+int check(enum sp_return result)
+{
+	/* For this example we'll just exit on any error by calling abort(). */
+	char *error_message;
+
+	switch (result) {
+	case SP_ERR_ARG:
+		printf("Error: Invalid argument.\n");
+		abort();
+	case SP_ERR_FAIL:
+		error_message = sp_last_error_message();
+		printf("Error: Failed: %s\n", error_message);
+		sp_free_error_message(error_message);
+		abort();
+	case SP_ERR_SUPP:
+		printf("Error: Not supported.\n");
+		abort();
+	case SP_ERR_MEM:
+		printf("Error: Couldn't allocate memory.\n");
+		abort();
+	case SP_OK:
+	default:
+		return result;
+	}
+}

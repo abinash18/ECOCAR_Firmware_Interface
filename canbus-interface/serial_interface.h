@@ -5,7 +5,7 @@
 extern "C"
 {
 #endif // __cplusplus
-    int print_ports(char test[]);
+    int print_ports();
     struct device
     {
         struct sp_port *port;
