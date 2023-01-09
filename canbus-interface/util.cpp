@@ -4,7 +4,7 @@
 extern "C"
 {
 #endif // __cplusplus
-/* Example of a helper function for error handling. */
+       /* Example of a helper function for error handling. */
     int check(enum sp_return result)
     {
         int error_code;
@@ -61,9 +61,11 @@ extern "C"
 
         case SP_OK:
         default:
-            /* A return value of SP_OK, defined as zero, means that the
-             * operation succeeded. */
+/* A return value of SP_OK, defined as zero, means that the
+ * operation succeeded. */
+#ifdef DEBUG
             printf("Operation succeeded.\n");
+#endif // DEBUG
 
             /* Some fuctions can also return a value greater than zero to
              * indicate a numeric result, such as the number of bytes read by
@@ -76,7 +78,8 @@ extern "C"
     /* Helper function to give a name for each parity mode. */
     const char *parity_name(enum sp_parity parity)
     {
-        switch (parity) {
+        switch (parity)
+        {
         case SP_PARITY_INVALID:
             return "(Invalid)";
         case SP_PARITY_NONE:
