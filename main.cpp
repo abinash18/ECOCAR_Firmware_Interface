@@ -1,8 +1,8 @@
+#include "canbus-interface/cbi.h"
 #include "canbus-interface/util.h"
 #include <libserialport.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #define BAUD_RATE 125000
 
@@ -60,19 +60,87 @@ int main(int argc, char **argv)
 	// for (int i = 0; i < num_ports; i++) {
 	/* Get number of bytes waiting. */
 	bool go = true;
+	bool terminator_reached = false;
 	int bytes_waiting = check(sp_input_waiting(ports[0]));
-	while (bytes_waiting != 0)
+	// buf = (char *)malloc(TOTAL_MESSAGE_SIZE);
+	char *buffer = (char *)calloc(TOTAL_MESSAGE_SIZE + 1, sizeof(char));
+	char *current_byte = (char *)malloc(sizeof(char));
+	int bytes_read = 0;
+	while (!terminator_reached)
 	{
 
-		bytes_waiting = check(sp_input_waiting(ports[0]));
-		// printf("Port %s: %d bytes received.\n",
+		// bytes_waiting = check(sp_input_waiting(ports[0]));
+		//  printf("Port %s: %d bytes received.\n",
 		//	   sp_get_port_name(ports[0]), bytes_waiting);
-		buf = (char *)malloc(bytes_waiting + 1);
-		sp_blocking_read(ports[0], buf, bytes_waiting, 10000);
-		printf("%s", buf);
-		free(buf);
+		// current_byte = (char *)malloc(sizeof(char));
+		while (check(sp_input_waiting(ports[0])) == 0)
+		{
+		};
+		// sp_blocking_read(ports[0], buf, bytes_waiting, 10000);
+		bytes_read = check(sp_nonblocking_read(ports[0], current_byte, sizeof(char)));
+		if (bytes_read != 0)
+			strcat(buffer, current_byte);
+		// printf("%s", current_byte);
+		//  printf("%s\n", buffer);
+		//   free(current_byte);
+		//      free(current_byte);
+		if (strchr(buffer, '\n') != NULL)
+		{
+			strcat(buffer, "\0");
+			// printf("%s\n", buffer[0]);
+			printf("\x1b[31mRecieved string:\033[0m %s\n", buffer);
+			//  fwrite(buffer, 1, sizeof(buffer), stdout);
+			free(buffer);
+			buffer = NULL;
+			terminator_reached = true;
+			continue;
+		}
 		check(sp_wait(event_set, 1000));
 	}
+	terminator_reached = false;
+	// free(buffer);
+	if (buffer != NULL)
+		free(buffer);
+
+	//  free(current_byte);
+	buffer = (char *)calloc(TOTAL_MESSAGE_SIZE + 1, sizeof(char));
+	// current_byte = (char *)malloc(sizeof(char));
+	while (!terminator_reached)
+	{
+
+		// bytes_waiting = check(sp_input_waiting(ports[0]));
+		//  printf("Port %s: %d bytes received.\n",
+		//	   sp_get_port_name(ports[0]), bytes_waiting);
+		// current_byte = (char *)malloc(sizeof(char));
+		while (check(sp_input_waiting(ports[0])) == 0)
+		{
+		};
+		// sp_blocking_read(ports[0], buf, bytes_waiting, 10000);
+		bytes_read = check(sp_nonblocking_read(ports[0], current_byte, sizeof(char)));
+		if (bytes_read != 0)
+			strcat(buffer, current_byte);
+		// printf("%s", current_byte);
+		//  printf("%s\n", buffer);
+		//   free(current_byte);
+		//      free(current_byte);
+		if (strchr(buffer, '\n') != NULL)
+		{
+			strcat(buffer, "\0");
+			// printf("%s\n", buffer[0]);
+			printf("\x1b[31mRecieved string:\033[0m %s\n", buffer);
+			//  fwrite(buffer, 1, sizeof(buffer), stdout);
+			free(buffer);
+			buffer = NULL;
+			terminator_reached = true;
+			continue;
+		}
+		check(sp_wait(event_set, 1000));
+	}
+	// free(buffer);
+	if (buffer != NULL)
+		free(buffer);
+
+	// free(current_byte);
 	go = true;
 	char *data = "GET test\n";
 	int size = strlen(data);
@@ -97,27 +165,65 @@ int main(int argc, char **argv)
 
 	//}
 	printf("Waiting up to 5 seconds for RX on any port...\n");
-	check(sp_wait(event_set, 1000));
+	// check(sp_wait(event_set, 1000));
 
 	/* Iterate over ports to see which have data waiting. */
 	// for (int i = 0; i < num_ports; i++) {
 	/* Get number of bytes waiting. */
 	bytes_waiting = 1;
-	while (bytes_waiting != 0)
+
+	// while (!terminator_reached)
+	// {
+	// 	bytes_waiting = check(sp_input_waiting(ports[0]));
+	// 	// printf("Port %s: %d bytes received.\n",
+	// 	//	   sp_get_port_name(ports[0]), bytes_waiting);
+	// 	buf = (char *)malloc(bytes_waiting + 1);
+	// 	// sp_blocking_read(ports[0], buf, bytes_waiting, 10000);
+	// 	sp_nonblocking_read(ports[0], buf, bytes_waiting);
+	// 	printf("%s", buf);
+	// 	free(buf);
+	// 	check(sp_wait(event_set, 1000));
+	// }
+	check(sp_wait(event_set, 1000));
+	terminator_reached = false;
+	buffer = (char *)calloc(TOTAL_MESSAGE_SIZE + 1, sizeof(char));
+	// current_byte = (char *)malloc(sizeof(char));
+	while (!terminator_reached)
 	{
-		bytes_waiting = check(sp_input_waiting(ports[0]));
-		// printf("Port %s: %d bytes received.\n",
+
+		// bytes_waiting = check(sp_input_waiting(ports[0]));
+		//  printf("Port %s: %d bytes received.\n",
 		//	   sp_get_port_name(ports[0]), bytes_waiting);
-		buf = (char *)malloc(bytes_waiting + 1);
-		sp_blocking_read(ports[0], buf, bytes_waiting, 1000);
-		printf("%s", buf);
-		if (strcmp(buf, "Serial Ready"))
+		// current_byte = (char *)malloc(sizeof(char));
+		while (check(sp_input_waiting(ports[0])) == 0)
 		{
-			go = false;
+		};
+		// sp_blocking_read(ports[0], buf, bytes_waiting, 10000);
+		bytes_read = check(sp_nonblocking_read(ports[0], current_byte, sizeof(char)));
+		if (bytes_read != 0)
+			strcat(buffer, current_byte);
+		// printf("%s", current_byte);
+		//  printf("%s\n", buffer);
+		//   free(current_byte);
+		//      free(current_byte);
+		if (strchr(buffer, '\n') != NULL)
+		{
+			strcat(buffer, "\0");
+			// printf("%s\n", buffer[0]);
+			printf("\x1b[31mRecieved string:\033[0m %s\n", buffer);
+			//  fwrite(buffer, 1, sizeof(buffer), stdout);
+			free(buffer);
+			buffer = NULL;
+			terminator_reached = true;
+			continue;
 		}
-		free(buf);
-		check(sp_wait(event_set, 10000));
+		check(sp_wait(event_set, 1000));
 	}
+	// free(buffer);
+	if (buffer != NULL)
+		free(buffer);
+
+	free(current_byte);
 
 	/* Close ports and free resources. */
 	sp_free_event_set(event_set);
