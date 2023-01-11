@@ -1,18 +1,64 @@
 #include "serial_interface.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #ifdef __cplusplus
 extern "C"
 {
 #endif // __cplusplus
-    
+
+    void read_until(struct device *device, char terminator, char **buffer)
+    {
+        bool terminator_reached = false;
+        *buffer = (char *)calloc(32 + 1, sizeof(char));
+        char *current_byte = (char *)calloc(1, sizeof(char));
+        int bytes_read = 0;
+        check(sp_wait(device->event_set, 1000));
+        while (!terminator_reached)
+        {
+            while (check(sp_input_waiting(device->port)) == 0)
+            {
+            };
+            bytes_read = check(sp_nonblocking_read((device->port), current_byte, sizeof(char)));
+            printf("%s", current_byte);
+            if (bytes_read != 0)
+                strcat(*buffer, current_byte);
+            if (strchr(*buffer, '\n') != NULL)
+            {
+                // printf("Readhecd");
+                strcat(*buffer, "\0");
+                terminator_reached = true;
+                continue;
+            }
+            check(sp_wait(device->event_set, 1000));
+        }
+        free(current_byte);
+    }
+
+    /**
+     * WTF vscode? like couldnt u tell me i was overloading a iostream function by accident?????
+     */
+    int si_write(struct device *device, char **data, int size)
+    {
+        int result = 0;
+        printf("%s\n", (char *)*data);
+        result = check(sp_blocking_write(device->port, *data, size, 1000));
+        check(sp_drain(device->port));
+        /* Check whether we sent all of the data. */
+        if (result == size)
+            printf("Sent %d bytes successfully.\n", size);
+        else
+            printf("Timed out, %d/%d bytes sent.\n", result, size);
+        return 0;
+    }
+
     /**
      * Search ports for serial devices, copied from examples folder in libserialport library source.
      *
      */
     int print_ports()
     {
-        
+
         printf("Looking for device...\n");
         /* A pointer to a null-terminated array of pointers to
          * struct sp_port, which will contain the ports found.*/
@@ -63,9 +109,9 @@ extern "C"
     }
 
     /**
-     * Returns a device 
+     * Returns a device
      */
-    void* open_channel(int baud, const char *port_name)
+    void *open_channel(int baud, const char *port_name)
     {
         struct sp_port *port;
         check(sp_get_port_by_name(port_name, &port));
@@ -77,27 +123,31 @@ extern "C"
         check(sp_set_parity(port, SP_PARITY_NONE));
         check(sp_set_stopbits(port, 1));
         check(sp_set_flowcontrol(port, SP_FLOWCONTROL_NONE));
-        return (void*)port;
+        return (void *)port;
     }
 
-    void print_port_info(void* device) {
+    void print_port_info(void *device)
+    {
         /* A pointer to a struct sp_port, which will refer to
-        * the port found. */
-        struct sp_port *port = (struct sp_port*)device;
+         * the port found. */
+        struct sp_port *port = (struct sp_port *)device;
 
         /* Display some basic information about the port. */
         printf("Port name: %s\n", sp_get_port_name(port));
         printf("Description: %s\n", sp_get_port_description(port));
 
         /* Identify the transport which this port is connected through,
-        * e.g. native port, USB or Bluetooth. */
+         * e.g. native port, USB or Bluetooth. */
         enum sp_transport transport = sp_get_port_transport(port);
 
-        if (transport == SP_TRANSPORT_NATIVE) {
+        if (transport == SP_TRANSPORT_NATIVE)
+        {
             /* This is a "native" port, usually directly connected
-            * to the system rather than some external interface. */
+             * to the system rather than some external interface. */
             printf("Type: Native\n");
-        } else if (transport == SP_TRANSPORT_USB) {
+        }
+        else if (transport == SP_TRANSPORT_USB)
+        {
             /* This is a USB to serial converter of some kind. */
             printf("Type: USB\n");
 
@@ -115,7 +165,9 @@ extern "C"
             int usb_bus, usb_address;
             sp_get_port_usb_bus_address(port, &usb_bus, &usb_address);
             printf("Bus: %d Address: %d\n", usb_bus, usb_address);
-        } else if (transport == SP_TRANSPORT_BLUETOOTH) {
+        }
+        else if (transport == SP_TRANSPORT_BLUETOOTH)
+        {
             /* This is a Bluetooth serial port. */
             printf("Type: Bluetooth\n");
 
@@ -129,55 +181,56 @@ extern "C"
         // sp_free_port(port);
 
         /* Note that this will also free the port name and other
-        * strings retrieved from the port structure. If you want
-        * to keep these, copy them before freeing the port. */
+         * strings retrieved from the port structure. If you want
+         * to keep these, copy them before freeing the port. */
     }
 
-    void print_port_config(void* device) {
+    void print_port_config(void *device)
+    {
         /* A pointer to a struct sp_port, which will refer to
-        * the port found. */
-        struct sp_port *port = (struct sp_port*) device;
+         * the port found. */
+        struct sp_port *port = (struct sp_port *)device;
 
         /* Display some basic information about the port. */
         printf("Port name: %s\n", sp_get_port_name(port));
         printf("Description: %s\n", sp_get_port_description(port));
 
         /* The port must be open to access its configuration. */
-        //printf("Opening port.\n");
-        //check(sp_open(port, SP_MODE_READ_WRITE));
+        // printf("Opening port.\n");
+        // check(sp_open(port, SP_MODE_READ_WRITE));
 
         /* There are two ways to access a port's configuration:
-        *
-        * 1. You can read and write a whole configuration (all settings at
-        *    once) using sp_get_config() and sp_set_config(). This is handy
-        *    if you want to change between some preset combinations, or save
-        *    and restore an existing configuration. It also ensures the
-        *    changes are made together, via an efficient set of calls into
-        *    the OS - in some cases a single system call can be used.
-        *
-        *    Use accessor functions like sp_get_config_baudrate() and
-        *    sp_set_config_baudrate() to get and set individual settings
-        *    from a configuration.
-        *
-        *    Configurations are allocated using sp_new_config() and freed
-        *    with sp_free_config(). You need to manage them yourself.
-        *
-        * 2. As a shortcut, you can set individual settings on a port
-        *    directly by calling functions like sp_set_baudrate() and
-        *    sp_set_parity(). This saves you the work of allocating
-        *    a temporary config, setting it up, applying it to a port
-        *    and then freeing it.
-        *
-        * In this example we'll do a bit of both: apply some initial settings
-        * to the port, read out that config and display it, then switch to a
-        * different configuration and back using sp_set_config(). */
+         *
+         * 1. You can read and write a whole configuration (all settings at
+         *    once) using sp_get_config() and sp_set_config(). This is handy
+         *    if you want to change between some preset combinations, or save
+         *    and restore an existing configuration. It also ensures the
+         *    changes are made together, via an efficient set of calls into
+         *    the OS - in some cases a single system call can be used.
+         *
+         *    Use accessor functions like sp_get_config_baudrate() and
+         *    sp_set_config_baudrate() to get and set individual settings
+         *    from a configuration.
+         *
+         *    Configurations are allocated using sp_new_config() and freed
+         *    with sp_free_config(). You need to manage them yourself.
+         *
+         * 2. As a shortcut, you can set individual settings on a port
+         *    directly by calling functions like sp_set_baudrate() and
+         *    sp_set_parity(). This saves you the work of allocating
+         *    a temporary config, setting it up, applying it to a port
+         *    and then freeing it.
+         *
+         * In this example we'll do a bit of both: apply some initial settings
+         * to the port, read out that config and display it, then switch to a
+         * different configuration and back using sp_set_config(). */
 
         /* First let's set some initial settings directly on the port.
-        *
-        * You should always configure all settings before using a port.
-        * There are no "default" settings applied by libserialport.
-        * When you open a port it has the defaults from the OS or driver,
-        * or the settings left over by the last program to use it. */
+         *
+         * You should always configure all settings before using a port.
+         * There are no "default" settings applied by libserialport.
+         * When you open a port it has the defaults from the OS or driver,
+         * or the settings left over by the last program to use it. */
         printf("Setting port to 125000 8N1, no flow control.\n");
         check(sp_set_baudrate(port, 125000));
         check(sp_set_bits(port, 8));
@@ -186,7 +239,7 @@ extern "C"
         check(sp_set_flowcontrol(port, SP_FLOWCONTROL_NONE));
 
         /* A pointer to a struct sp_port_config, which we'll use for the config
-        * read back from the port. The pointer will be set by sp_new_config(). */
+         * read back from the port. The pointer will be set by sp_new_config(). */
         struct sp_port_config *initial_config;
 
         /* Allocate a configuration for us to read the port config into. */
@@ -203,7 +256,7 @@ extern "C"
         check(sp_get_config_stopbits(initial_config, &stopbits));
         check(sp_get_config_parity(initial_config, &parity));
         printf("Baudrate: %d, data bits: %d, parity: %s, stop bits: %d\n",
-                baudrate, bits, parity_name(parity), stopbits);
+               baudrate, bits, parity_name(parity), stopbits);
 
         /* Create a different configuration to have ready for use. */
         printf("Creating new config for 9600 7E2, XON/XOFF flow control.\n");
@@ -230,10 +283,10 @@ extern "C"
         sp_free_config(other_config);
     }
 
-    void free_lib(void* device)
+    void free_lib(void *device)
     {
-        check(sp_close((struct sp_port*)device));
-        sp_free_port((struct sp_port*)device);   
+        check(sp_close((struct sp_port *)device));
+        sp_free_port((struct sp_port *)device);
     }
 #ifdef __cplusplus
 }

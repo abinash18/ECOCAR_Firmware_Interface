@@ -20,6 +20,9 @@ extern "C"
     void print_port_config(void *device);
     void free_lib(void *device);
 
+    void read_until(struct device *device, char terminator, char **buffer);
+    int si_write(struct device *device, char **data, int size);
+
     void wait_event(sp_event_set *event, int milliseconds);
     void set_event_set(sp_event_set *event_set);
     void free_event_set(sp_event_set *event_set);
