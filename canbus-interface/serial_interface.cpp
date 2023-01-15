@@ -2,24 +2,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif // __cplusplus
-
-    void read_until(struct device *device, char terminator, char **buffer)
+    void read_until(void *port_device, char terminator, char **buffer)
     {
+        struct device *device_p = (struct device *)port_device;
         bool terminator_reached = false;
-        *buffer = (char *)calloc(32 + 1, sizeof(char));
+        //*buffer = (char *)calloc(32 + 1, sizeof(char));
         char *current_byte = (char *)calloc(1, sizeof(char));
         int bytes_read = 0;
-        check(sp_wait(device->event_set, 1000));
+        check(sp_wait(device_p->event_set_rx, 1000));
         while (!terminator_reached)
         {
-            while (check(sp_input_waiting(device->port)) == 0)
+            while (check(sp_input_waiting(device_p->port)) == 0)
             {
             };
-            bytes_read = check(sp_nonblocking_read((device->port), current_byte, sizeof(char)));
+            bytes_read = check(sp_blocking_read((device_p->port), current_byte, sizeof(char), 1000));
             printf("%s", current_byte);
             if (bytes_read != 0)
                 strcat(*buffer, current_byte);
@@ -30,7 +31,7 @@ extern "C"
                 terminator_reached = true;
                 continue;
             }
-            check(sp_wait(device->event_set, 1000));
+            check(sp_wait(device_p->event_set_rx, 1000));
         }
         free(current_byte);
     }
@@ -38,12 +39,12 @@ extern "C"
     /**
      * WTF vscode? like couldnt u tell me i was overloading a iostream function by accident?????
      */
-    int si_write(struct device *device, char **data, int size)
+    int si_write(void *port_device, char **data, int size)
     {
         int result = 0;
-        printf("%s\n", (char *)*data);
-        result = check(sp_blocking_write(device->port, *data, size, 1000));
-        check(sp_drain(device->port));
+        printf("Writing: %s\n", (char *)*data);
+        result = check(sp_blocking_write(((struct device *)port_device)->port, *data, size, 1000));
+        check(sp_drain(((struct device *)port_device)->port));
         /* Check whether we sent all of the data. */
         if (result == size)
             printf("Sent %d bytes successfully.\n", size);
@@ -108,22 +109,68 @@ extern "C"
         return 0;
     }
 
+    void free_lib(void *device)
+    {
+        check(sp_close((struct sp_port *)device));
+        sp_free_port((struct sp_port *)device);
+    }
+
+    /**
+     * Returns a void pointer to the device structure. This is done so there is no need for a device wrapper in python
+     */
+    void si_allocate_device(void **port_device)
+    {
+        struct device *p = (struct device *)calloc(1, sizeof(struct device));
+        *port_device = p;
+        printf("Allocated Device %p : %s\n", p, (*p).name);
+    }
+
     /**
      * Returns a device
      */
-    void *open_channel(int baud, const char *port_name)
+    void si_open_channel(int baud, const char *port_name, void *port_device, int mode)
     {
         struct sp_port *port;
         check(sp_get_port_by_name(port_name, &port));
-        printf("Opening port.\n");
-        check(sp_open(port, SP_MODE_READ));
+        printf("Opening port: '%s'\n", port_name);
+        sp_mode temp_mode;
+        switch (mode)
+        {
+        case SI_READ:
+            temp_mode = SP_MODE_READ;
+            break;
+        case SI_WRITE:
+            temp_mode = SP_MODE_WRITE;
+            break;
+        case SI_READ_WRITE:
+            temp_mode = SP_MODE_READ_WRITE;
+            break;
+        default:
+            temp_mode = SP_MODE_READ_WRITE;
+            break;
+        }
+        check(sp_open(port, temp_mode));
         printf("Setting port to %i 8N1, no flow control.\n", baud);
         check(sp_set_baudrate(port, baud));
         check(sp_set_bits(port, 8));
         check(sp_set_parity(port, SP_PARITY_NONE));
         check(sp_set_stopbits(port, 1));
         check(sp_set_flowcontrol(port, SP_FLOWCONTROL_NONE));
-        return (void *)port;
+        printf("Before setting port.\n");
+        (*((struct device *)port_device)).port = port;
+        printf("Reached.\n");
+        struct sp_event_set *event_set_RX;
+
+        check(sp_new_event_set(&event_set_RX));
+
+        struct sp_event_set *event_set_TX;
+
+        check(sp_new_event_set(&event_set_TX));
+        // printf("Adding port RX event to event set.\n");
+        check(sp_add_port_events(event_set_RX, port, SP_EVENT_RX_READY));
+        check(sp_add_port_events(event_set_TX, port, SP_EVENT_TX_READY));
+        ((struct device *)port_device)->event_set_rx = event_set_RX;
+        ((struct device *)port_device)->event_set_tx = event_set_TX;
     }
 
     void print_port_info(void *device)
@@ -283,11 +330,6 @@ extern "C"
         sp_free_config(other_config);
     }
 
-    void free_lib(void *device)
-    {
-        check(sp_close((struct sp_port *)device));
-        sp_free_port((struct sp_port *)device);
-    }
 #ifdef __cplusplus
 }
 #endif // __cplusplus
