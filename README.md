@@ -1,18 +1,16 @@
-<<<<<<< HEAD
 # Contains Code for the C library made to interact directly with the communications hub.
 
 ## Also contains the python function bindings for the C library
 
 To initialize the library build:
 
-Pull and run the setup.sh script with sudo
+1. Pull and run the setup.sh script with sudo
 
-And then create a folder build
+2. And then create a folder build
 
-and cd into it and run cmake ..
+3. and cd into it and run cmake ..
 
-then make
-=======
+4. then make
+---
 # ECOCAR_Firmware_Interface
 Ecocar Firmware interface written in C
->>>>>>> origin/master
