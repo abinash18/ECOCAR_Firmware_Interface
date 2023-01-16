@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Contains Code for the C library made to interact directly with the communications hub.
 
 ## Also contains the python function bindings for the C library
@@ -11,3 +12,7 @@ And then create a folder build
 and cd into it and run cmake ..
 
 then make
+=======
+# ECOCAR_Firmware_Interface
+Ecocar Firmware interface written in C
+>>>>>>> origin/master
