@@ -6,6 +6,7 @@
 #include <libserialport.h>
 #include <stdint.h>
 
+/** PORT MODES */
 #define SI_READ 1
 #define SI_WRITE 2
 #define SI_READ_WRITE 3
@@ -17,7 +18,7 @@ extern "C"
 #endif // __cplusplus
 
     /**
-     * @brief
+     * @brief The librarys structure to hold port information.
      */
     struct device
     {
@@ -26,6 +27,14 @@ extern "C"
         struct sp_event_set *event_set_tx;
         // char *name; /* Set port name here while opening using malloc */
     };
+
+    /**
+     * @brief Returns a string contained in a string buffer, used as a helper function
+     * in python. Because converting a pointer to a different type in python is a headache.
+     * @param string_buffer Pointer to char buffer.
+     * @return A const char pointer to the string.
+     */
+    const char *si_get_string(void *string_buffer);
 
     /**
      * @brief Prints all active ports on the machine into the output stream.
@@ -65,27 +74,30 @@ extern "C"
      */
     void print_port_config(void *port_device);
 
+    // TODO: in the future there will be a method to allocate a buffer which will then return a pointer.
     /**
-     * @brief
+     * @brief Frees the memory allocated by the library.
      * @param port_device
      */
     void free_lib(void *port_device);
 
     /**
-     * @brief
-     * @param port_device
-     * @param terminator
-     * @param buffer
+     * @brief Reads the serial input at the port provieded until the termination character provided is reached. Non-Blocking
+     * @param port_device The allocated and opened device to read from
+     * @param terminator a character that the method will read to.
+     * @param buffer the buffer to store the result in.
      */
-    void read_until(void *port_device, char terminator, char **buffer);
+    void si_read_until(void *port_device, char terminator, void **buffer);
 
     /**
-     * @brief
-     * @param port_device
-     * @param data
-     * @param size
-     * @param wait
-     * @return
+     * @brief Writes to the opened port the data provided with an added newline character.
+     * Data cannot be changing. Writes the amount of bytes given by size to the output buffer.
+     * If wait is true then this method will wait until the output buffer is drained.
+     * @param port_device The allocated and opened port to write to.
+     * @param data Pointer to constant array of data.
+     * @param size The size of the data array. Can be smaller but not larger than the size of the array.
+     * @param wait If set to true the method will wait until the output buffer is drained. Otherwise the method will return.
+     * @return The number of bytes written. Cannot gurentee that all bytes have been transmitted unless wait is set to true.
      */
     int si_write_line(void *port_device, const char *data, int size, bool wait);
 
@@ -107,6 +119,28 @@ extern "C"
      * @param event_set
      */
     void free_event_set(sp_event_set *event_set);
+
+    /**
+     * @brief
+     * @param buffer A refrence to a pointer that is to store the buffer's location.
+     * @param size Size of the buffer.
+     */
+
+    /**
+     * @brief Allocates a buffer in memory of size at the pointer location provided by the reference.
+     * NOTE: The buffer is initialized to all 0's.
+     * @param buffer A refrence to a pointer that is to store the buffer's location.
+     * @param num_elements Number of elements to assign to the element.
+     * @param element_size Size of each element.
+     */
+    void si_allocate_buffer(void **buffer, int num_elements, int element_size);
+
+    /**
+     * @brief Frees buffers allocated on the heap and sets the pointer to NULL. Safe if called multiple
+     * times on the same buffer because it will check if the buffer is NULL, but not recommended.
+     * @param buffer Reference to the buffer pointer.
+     */
+    void si_free_buffer(void **buffer);
 
 #ifdef __cplusplus
 }

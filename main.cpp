@@ -34,29 +34,31 @@ extern "C"
 
 		printf("Waiting up to 5 seconds for RX on any port...\n");
 		check(sp_wait(p->event_set_rx, 1000));
-		char *buffer;
+		void *buffer;
 		// buffer = (char *)calloc(32, sizeof(char));
-		// read_until(p, '\n', &buffer);
+		// si_read_until(p, '\n', &buffer);
 		// printf("\x1b[31mRecieved string:\033[0m %s\n", buffer);
 		// free(buffer);
-		// read_until(p, '\n', &buffer);
+		// si_read_until(p, '\n', &buffer);
 		// printf("\x1b[31mRecieved string:\033[0m %s\n", buffer);
 		// free(buffer);
 		// buffer = (char *)calloc(32 + 1, sizeof(char));
-		// read_until(p, '\n', &buffer);
+		// si_read_until(p, '\n', &buffer);
 		// printf("\x1b[31mRecieved string:\033[0m %s\n", buffer);
 		// free(buffer);
 
-		const char *data = "GET VOLTAGE"; //{'G', 'E', 'T', ' ', 'V', 'O', 'L', 'T', 'A', 'G', 'E'};
+		const char *data = "GET *OK"; //{'G', 'E', 'T', ' ', 'V', 'O', 'L', 'T', 'A', 'G', 'E'};
 
 		const char *papa = "SET VOLTAGE 99"; //{'S', 'E', 'T', ' ', 'V', 'O', 'L', 'T', 'A', 'G', 'E', ' ', '1', '0', '0'};
 		int size = strlen(data);
 		char end = '\n';
 		int result;
+		char *writedata;
+
 		// check(sp_wait(p->event_set_tx, 1000));
 		si_write_line(p, papa, strlen(papa), true);
 		// check(sp_wait(p->event_set_rx, 1000));
-		//   read_until(p, '\n', &buffer);
+		// si_read_until(p, '\n', &buffer);
 		//    char d[];
 		//   sscanf("%s%s", data, end);
 
@@ -65,9 +67,9 @@ extern "C"
 			si_write_line(p, data, size, false);
 			printf("iter : %d\n", i);
 			// check(sp_wait(p->event_set_rx, 1000));
-			buffer = (char *)calloc(32, sizeof(char));
-			read_until(p, '\n', &buffer);
-			printf("\x1b[32mRecieved string:\033[0m %s\n", buffer);
+			buffer = (void *)calloc(32, sizeof(char));
+			si_read_until(p, '\n', (void **)&buffer);
+			printf("\x1b[32mRecieved string:\033[0m %s\n", (char *)buffer);
 			free(buffer);
 		}
 
@@ -77,7 +79,7 @@ extern "C"
 
 		// check(sp_wait(p->event_set_rx, 1000));
 		// buffer = (char *)calloc(32, sizeof(char));
-		// read_until(p, '\n', &buffer);
+		// si_read_until(p, '\n', &buffer);
 		// printf("\x1b[31mRecieved string:\033[0m %s\n", buffer);
 		// free(buffer);
 		// int s = 0;
@@ -85,7 +87,7 @@ extern "C"
 		// {
 		// 	check(sp_wait(p->event_set_rx, 1000));
 		// 	buffer = (char *)calloc(32, sizeof(char));
-		// 	read_until(p, '\n', &buffer);
+		// 	si_read_until(p, '\n', &buffer);
 		// 	printf("\x1b[31mRecieved string:\033[0m %s\n", buffer);
 		// 	free(buffer);
 		// 	s++;
@@ -93,7 +95,7 @@ extern "C"
 		// }
 		// check(sp_wait(p->event_set_rx, 1000));
 		// buffer = (char *)calloc(32, sizeof(char));
-		// read_until(p, '\n', &buffer);
+		// si_read_until(p, '\n', &buffer);
 		// printf("\x1b[31mRecieved string:\033[0m %s\n", buffer);
 		// free(buffer);
 		// sp_free_event_set(p->event_set_rx);

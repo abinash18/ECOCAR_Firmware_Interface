@@ -17,6 +17,7 @@ extern "C"
 
     /* Helper function to give a name for each parity mode. */
     const char *parity_name(enum sp_parity parity);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

@@ -13,8 +13,23 @@ extern "C"
 {
 #endif // __cplusplus
 
-    void read_until(void *port_device, char terminator, char **buffer)
+    /**
+     * I hate python
+     */
+    void si_allocate_buffer(void **buffer, int num_elements, int element_size)
     {
+        *buffer = (void *)calloc(num_elements, element_size);
+    }
+
+    void si_free_buffer(void **buffer)
+    {
+        free(*buffer);
+        *buffer = NULL;
+    }
+
+    void si_read_until(void *port_device, char terminator, void **buffer)
+    {
+
         struct device *device_p = (struct device *)port_device;
         bool terminator_reached = false;
         //*buffer = (char *)calloc(32 + 1, sizeof(char));
@@ -28,18 +43,22 @@ extern "C"
             {
             };
             bytes_read = check(sp_nonblocking_read((device_p->port), current_byte, sizeof(char)));
+
             // printf("%s", current_byte);
             if (bytes_read != 0)
-                strcat(*buffer, current_byte);
-            if (strchr(*buffer, '\n') != NULL)
+                strcat((char *)*buffer, current_byte);
+            // printf("s\n");
+            if (strchr((char *)*buffer, '\n') != NULL)
             {
-                // printf("Readhecd");
-                strcat(*buffer, "\0");
+
+                strcat((char *)*buffer, "\0");
                 terminator_reached = true;
                 continue;
             }
+
             check(sp_wait(device_p->event_set_rx, 1000));
         }
+        printf("\x1b[32mRecieved string:\033[0m %s\n", (char *)*buffer);
         free(current_byte);
     }
 
@@ -58,7 +77,7 @@ extern "C"
         else
             printf("\x1b[31mTimed out, %d/%d bytes sent.\033[0m\n", result, size + 1);
 
-        return 0;
+        return result;
     }
 
     /**
@@ -114,8 +133,9 @@ extern "C"
 
     void free_lib(void *device)
     {
-        check(sp_close((struct sp_port *)device));
-        sp_free_port((struct sp_port *)device);
+        struct device *d = (struct device *)device;
+        check(sp_close((struct sp_port *)(d->port)));
+        sp_free_port((struct sp_port *)(d->port));
     }
 
     /**
@@ -136,6 +156,8 @@ extern "C"
         struct sp_port *port;
         check(sp_get_port_by_name(port_name, &port));
         printf("Opening port: '%s'\n", port_name);
+
+        // ! THIS IS BAD I KNOW BUT IT WORKS SHUT UP.
         sp_mode temp_mode;
         switch (mode)
         {
@@ -159,7 +181,8 @@ extern "C"
         check(sp_set_parity(port, SP_PARITY_NONE));
         check(sp_set_stopbits(port, 1));
         check(sp_set_flowcontrol(port, SP_FLOWCONTROL_NONE));
-        (*((struct device *)port_device)).port = port;
+        //(*((struct device *)port_device)).port = port;
+        ((struct device *)port_device)->port = port;
         struct sp_event_set *event_set_RX;
 
         check(sp_new_event_set(&event_set_RX));
