@@ -1,7 +1,7 @@
 from ctypes import *
 import ctypes
 
-serial = ctypes.CDLL('./build/canbus-interface/libCANBUS_INTERFACE.so')
+serial = ctypes.CDLL('./build/serial-interface/libSERIAL_INTERFACE.so')
 
 SI_READ = 1
 SI_WRITE = 2

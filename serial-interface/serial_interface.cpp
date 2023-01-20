@@ -1,3 +1,8 @@
+/*
+ * Created on Thu Jan 19 2023
+ *
+ * Copyright (c) 2023 Your Company
+ */
 #include "serial_interface.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +12,7 @@
 extern "C"
 {
 #endif // __cplusplus
+
     void read_until(void *port_device, char terminator, char **buffer)
     {
         struct device *device_p = (struct device *)port_device;
@@ -15,13 +21,14 @@ extern "C"
         char *current_byte = (char *)calloc(1, sizeof(char));
         int bytes_read = 0;
         check(sp_wait(device_p->event_set_rx, 1000));
+
         while (!terminator_reached)
         {
             while (check(sp_input_waiting(device_p->port)) == 0)
             {
             };
-            bytes_read = check(sp_blocking_read((device_p->port), current_byte, sizeof(char), 1000));
-            printf("%s", current_byte);
+            bytes_read = check(sp_nonblocking_read((device_p->port), current_byte, sizeof(char)));
+            // printf("%s", current_byte);
             if (bytes_read != 0)
                 strcat(*buffer, current_byte);
             if (strchr(*buffer, '\n') != NULL)
@@ -36,20 +43,21 @@ extern "C"
         free(current_byte);
     }
 
-    /**
-     * WTF vscode? like couldnt u tell me i was overloading a iostream function by accident?????
-     */
-    int si_write(void *port_device, char **data, int size)
+    const char end = '\n';
+    int si_write_line(void *port_device, const char *data, int size, bool wait)
     {
         int result = 0;
-        printf("Writing: %s\n", (char *)*data);
-        result = check(sp_blocking_write(((struct device *)port_device)->port, *data, size, 1000));
-        check(sp_drain(((struct device *)port_device)->port));
+        printf("\x1b[36mWriting string:\033[0m %s\n", data);
+        result = check(sp_nonblocking_write(((struct device *)port_device)->port, data, size));
+        result += check(sp_nonblocking_write(((struct device *)port_device)->port, &end, 1));
+        if (wait)
+            check(sp_drain(((struct device *)port_device)->port));
         /* Check whether we sent all of the data. */
-        if (result == size)
-            printf("Sent %d bytes successfully.\n", size);
+        if (result == size + 1)
+            printf("\x1b[32mSent %d bytes successfully.\033[0m\n", size + 1);
         else
-            printf("Timed out, %d/%d bytes sent.\n", result, size);
+            printf("\x1b[31mTimed out, %d/%d bytes sent.\033[0m\n", result, size + 1);
+
         return 0;
     }
 
@@ -104,11 +112,6 @@ extern "C"
         return 0;
     }
 
-    uint64_t get_first_active_port()
-    {
-        return 0;
-    }
-
     void free_lib(void *device)
     {
         check(sp_close((struct sp_port *)device));
@@ -122,7 +125,7 @@ extern "C"
     {
         struct device *p = (struct device *)calloc(1, sizeof(struct device));
         *port_device = p;
-        printf("Allocated Device %p : %s\n", p, (*p).name);
+        printf("Allocated Device %p\n", p);
     }
 
     /**
@@ -156,9 +159,7 @@ extern "C"
         check(sp_set_parity(port, SP_PARITY_NONE));
         check(sp_set_stopbits(port, 1));
         check(sp_set_flowcontrol(port, SP_FLOWCONTROL_NONE));
-        printf("Before setting port.\n");
         (*((struct device *)port_device)).port = port;
-        printf("Reached.\n");
         struct sp_event_set *event_set_RX;
 
         check(sp_new_event_set(&event_set_RX));
@@ -173,11 +174,12 @@ extern "C"
         ((struct device *)port_device)->event_set_tx = event_set_TX;
     }
 
-    void print_port_info(void *device)
+    void print_port_info(void *port_device)
     {
+
         /* A pointer to a struct sp_port, which will refer to
          * the port found. */
-        struct sp_port *port = (struct sp_port *)device;
+        struct sp_port *port = ((struct device *)port_device)->port;
 
         /* Display some basic information about the port. */
         printf("Port name: %s\n", sp_get_port_name(port));
