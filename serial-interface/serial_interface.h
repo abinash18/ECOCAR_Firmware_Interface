@@ -11,6 +11,8 @@
 #define SI_WRITE 2
 #define SI_READ_WRITE 3
 
+#define MAX_MESSAGE_SIZE 32
+
 #ifdef __cplusplus
 
 extern "C"
@@ -34,7 +36,7 @@ extern "C"
      * @param string_buffer Pointer to char buffer.
      * @return A const char pointer to the string.
      */
-    const char *si_get_string(void *string_buffer);
+    char *si_get_string(void *string_buffer);
 
     /**
      * @brief Prints all active ports on the machine into the output stream.
@@ -48,6 +50,12 @@ extern "C"
      * @param port_device a reference to the device structure pointer on the heap.
      */
     void si_allocate_device(void **port_device);
+
+    /**
+     * @brief
+     * @param type
+     */
+    void si_flush_buffer(void *device, int type);
 
     /**
      * @brief Opens a channel with default settings and the baud provided. Channel opened will be retured as a device structure,
@@ -136,8 +144,7 @@ extern "C"
     void si_allocate_buffer(void **buffer, int num_elements, int element_size);
 
     /**
-     * @brief Frees buffers allocated on the heap and sets the pointer to NULL. Safe if called multiple
-     * times on the same buffer because it will check if the buffer is NULL, but not recommended.
+     * @brief Frees buffers allocated on the heap.
      * @param buffer Reference to the buffer pointer.
      */
     void si_free_buffer(void **buffer);

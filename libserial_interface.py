@@ -7,6 +7,11 @@ SI_READ = 1
 SI_WRITE = 2
 SI_READ_WRITE = 3
 
+
+SI_INPUT = 1
+SI_OUTPUT = 2
+SI_BOTH = 3
+
 serial.print_ports()
 
 si_allocate_buffer = serial.si_allocate_buffer
@@ -18,6 +23,9 @@ si_free_buffer.argtypes = [ctypes.c_void_p]
 si_allocate_device = serial.si_allocate_device
 si_allocate_device.argtypes = [ctypes.c_void_p]
 
+si_get_string = serial.si_get_string
+si_get_string.argtypes = [ctypes.c_void_p]
+si_get_string.restype = ctypes.c_char_p
 
 si_open_channel = serial.si_open_channel
 si_open_channel.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_void_p, ctypes.c_int]
@@ -30,13 +38,16 @@ si_write_line.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes
 si_write_line.restype = ctypes.c_int
 # Open channel on port
 
+si_flush_buffer = serial.si_flush_buffer
+si_flush_buffer.argtypes = [ctypes.c_void_p, ctypes.c_int]
+
 
 # wrap hello to make sure the free is done
-# def hello(name):
-#     _result = hello.hello(name)
-#     result = _result.value
-#     libc.free(_result)
-#     return result
+def sip_get_string(string_buffer):
+    _result = si_get_string(string_buffer)
+    result = cast(_result, c_char_p).value
+    si_free_buffer(_result)
+    return result
 
 
 # _port = input("Enter the port: ")
@@ -46,15 +57,29 @@ device = ctypes.c_void_p()
 si_allocate_device(ctypes.byref(device))
 si_open_channel(125000, c_char_p(b"/dev/ttyACM0"), device, SI_READ_WRITE)
 
+si_flush_buffer(device, SI_BOTH)
 
 buffer = c_void_p()
 si_allocate_buffer(ctypes.byref(buffer),  ctypes.c_int(1),  ctypes.c_int(32))
 
-si_write_line(device, c_char_p(b"GET VOLTAGE"), ctypes.c_int(11), ctypes.c_bool(False))
+# si_write_line(device, c_char_p(b"SET VOLTAGE 999"), ctypes.c_int(15), ctypes.c_bool(True))
+
+# si_write_line(device, c_char_p(b"GET VOLTAGE"), ctypes.c_int(11), ctypes.c_bool(False))
+
+# si_read_until(device, c_char(b"\n"), ctypes.byref(buffer))
+
+
+
+
+def sip_write_line(device, line):
+    si_write_line(device, c_char_p(line.encode('utf-8')), ctypes.c_int(len(line)), ctypes.c_bool(True))
+
+sip_write_line(device, "SET VOLTAGE 19213")
+sip_write_line(device, "GET VOLTAGE")
 
 si_read_until(device, c_char(b"\n"), ctypes.byref(buffer))
-
-si_free_buffer(ctypes.byref(buffer))
+print(cast(buffer, c_char_p).value.decode("utf-8"))
+# si_free_buffer(ctypes.byref(buffer))
 
 
 # 
