@@ -24,7 +24,7 @@ extern "C"
     void si_free_buffer(void **buffer)
     {
         free(*buffer);
-        *buffer = NULL;
+        //*buffer = NULL;
     }
 
     void si_read_until(void *port_device, char terminator, void **buffer)
@@ -58,7 +58,7 @@ extern "C"
 
             check(sp_wait(device_p->event_set_rx, 1000));
         }
-        printf("\x1b[32mRecieved string:\033[0m %s\n", (char *)*buffer);
+        // printf("\x1b[32mRecieved string:\033[0m %s\n", (char *)*buffer);
         free(current_byte);
     }
 
@@ -78,6 +78,18 @@ extern "C"
             printf("\x1b[31mTimed out, %d/%d bytes sent.\033[0m\n", result, size + 1);
 
         return result;
+    }
+
+    /**
+     * @brief Returns the string representation of the passed buffer. Requires that the buffer be null terminated.
+     * @param buffer Pointer to the buffer with the null terminated string. Maximum size is 32 for now.
+     * @return String representation of the buffer.
+     */
+    char *si_get_string(void *string_buffer)
+    {
+        char *string = (char *)malloc(MAX_MESSAGE_SIZE);
+        sscanf((char *)string_buffer, "%s", string);
+        return string;
     }
 
     /**
@@ -146,6 +158,27 @@ extern "C"
         struct device *p = (struct device *)calloc(1, sizeof(struct device));
         *port_device = p;
         printf("Allocated Device %p\n", p);
+    }
+
+    void si_flush_buffer(void *device, int type)
+    {
+        sp_buffer b;
+        switch (type)
+        {
+        case 1:
+            b = SP_BUF_INPUT;
+            break;
+        case 2:
+            b = SP_BUF_OUTPUT;
+            break;
+        case 3:
+            b = SP_BUF_BOTH;
+            break;
+        default:
+            break;
+        }
+        check(sp_flush((struct sp_port *)((struct device *)device)->port, b));
+        printf("Flushing Buffers\n");
     }
 
     /**
