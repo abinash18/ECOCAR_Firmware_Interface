@@ -42,7 +42,7 @@ extern "C"
      * @brief Prints all active ports on the machine into the output stream.
      * @return 0.
      */
-    int print_ports();
+    int si_print_ports();
 
     /**
      * @brief Allocates memory on the heap for the device structure. And it sets the param port_device to the location.
@@ -74,20 +74,20 @@ extern "C"
      * and opened before calling.
      * @param port_device Pointer to device structure allocated.
      */
-    void print_port_info(void *port_device);
+    void si_print_port_info(void *port_device);
 
     /**
      * @brief
      * @param port_device
      */
-    void print_port_config(void *port_device);
+    void si_print_port_config(void *port_device);
 
     // TODO: in the future there will be a method to allocate a buffer which will then return a pointer.
     /**
      * @brief Frees the memory allocated by the library.
      * @param port_device
      */
-    void free_lib(void *port_device);
+    void si_free_lib(void *port_device);
 
     /**
      * @brief Reads the serial input at the port provieded until the termination character provided is reached. Non-Blocking
@@ -110,7 +110,7 @@ extern "C"
     int si_write_line(void *port_device, const char *data, int size, bool wait);
 
     /**
-     * @brief
+     * @brief Waits on a system event for the given amount of time.
      * @param event
      * @param milliseconds
      */
@@ -129,12 +129,6 @@ extern "C"
     void free_event_set(sp_event_set *event_set);
 
     /**
-     * @brief
-     * @param buffer A refrence to a pointer that is to store the buffer's location.
-     * @param size Size of the buffer.
-     */
-
-    /**
      * @brief Allocates a buffer in memory of size at the pointer location provided by the reference.
      * NOTE: The buffer is initialized to all 0's.
      * @param buffer A refrence to a pointer that is to store the buffer's location.
@@ -148,6 +142,12 @@ extern "C"
      * @param buffer Reference to the buffer pointer.
      */
     void si_free_buffer(void **buffer);
+
+    /**
+     * @brief Closes the device port.
+     * @param device An allocated and opened device.
+     */
+    void si_close(void **device);
 
 #ifdef __cplusplus
 }
