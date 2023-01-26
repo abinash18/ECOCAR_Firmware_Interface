@@ -27,6 +27,14 @@ extern "C"
         //*buffer = NULL;
     }
 
+    void si_close(void **device)
+    {
+        struct device *p = (struct device *)*device;
+        check(sp_close(p->port));
+        sp_free_port(p->port);
+        // si_free_buffer(device);
+    }
+
     void si_read_until(void *port_device, char terminator, void **buffer)
     {
 
@@ -51,7 +59,7 @@ extern "C"
             if (strchr((char *)*buffer, '\n') != NULL)
             {
 
-                strcat((char *)*buffer, "\0");
+                // strcat((char *)*buffer, "\0"); // !!!! BUGGGGGGGGGGG: will cause buffer overflow.
                 terminator_reached = true;
                 continue;
             }
@@ -96,7 +104,7 @@ extern "C"
      * Search ports for serial devices, copied from examples folder in libserialport library source.
      *
      */
-    int print_ports()
+    int si_print_ports()
     {
 
         printf("Looking for device...\n");
@@ -143,7 +151,7 @@ extern "C"
         return 0;
     }
 
-    void free_lib(void *device)
+    void si_free_lib(void *device)
     {
         struct device *d = (struct device *)device;
         check(sp_close((struct sp_port *)(d->port)));
@@ -230,7 +238,7 @@ extern "C"
         ((struct device *)port_device)->event_set_tx = event_set_TX;
     }
 
-    void print_port_info(void *port_device)
+    void si_print_port_info(void *port_device)
     {
 
         /* A pointer to a struct sp_port, which will refer to
@@ -290,7 +298,7 @@ extern "C"
          * to keep these, copy them before freeing the port. */
     }
 
-    void print_port_config(void *device)
+    void si_print_port_config(void *device)
     {
         /* A pointer to a struct sp_port, which will refer to
          * the port found. */
