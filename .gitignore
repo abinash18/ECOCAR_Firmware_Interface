@@ -4,4 +4,4 @@ build/
 *.o
 CMakeFiles/
 Testing/
-__pycahce__/
+__pycache__/

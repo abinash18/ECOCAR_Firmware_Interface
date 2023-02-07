@@ -8,7 +8,7 @@ si_allocate_device(ctypes.byref(device))
 
 # tell the C library to use that pointer to open a COM/tty port and store 
 # the data needed to access it in the device structure
-si_open_channel(125000, c_char_p(b"/dev/ttyACM0"), device, SI_WRITE)
+si_open_channel(125000, c_char_p(b"/dev/ttyUSB0"), device, SI_WRITE)
 
 # now that we have the comunication channel open we can do what we want.
 
@@ -16,7 +16,7 @@ si_open_channel(125000, c_char_p(b"/dev/ttyACM0"), device, SI_WRITE)
 i = 0
 while (True):
     print(i)
-    sip_write_line(device, "GET VOLTAGE") #input("To write: "))
+    sip_write_line(device, input("To write: "))
     i+=1
     
     

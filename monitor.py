@@ -8,7 +8,7 @@ si_allocate_device(ctypes.byref(device))
 
 # tell the C library to use that pointer to open a COM/tty port and store 
 # the data needed to access it in the device structure
-si_open_channel(125000, c_char_p(b"/dev/ttyACM0"), device, SI_READ)
+si_open_channel(125000, c_char_p(b"/dev/ttyUSB0"), device, SI_READ)
 
 # now that we have the comunication channel open we can do what we want.
 
