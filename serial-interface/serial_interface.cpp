@@ -8,11 +8,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DEBUG 0
+
 #ifdef __cplusplus
 extern "C"
 {
 #endif // __cplusplus
-
+#define PRINT(fmt, ...)                          \
+    do                                           \
+    {                                            \
+        if (DEBUG)                               \
+            fprintf(stderr, fmt, ##__VA_ARGS__); \
+    } while (0)
     /**
      * I hate python
      */
@@ -52,10 +59,10 @@ extern "C"
             };
             bytes_read = check(sp_nonblocking_read((device_p->port), current_byte, sizeof(char)));
 
-            // printf("%s", current_byte);
+            // PRINT("%s", current_byte);
             if (bytes_read != 0)
                 strcat((char *)*buffer, current_byte);
-            // printf("s\n");
+            // PRINT("s\n");
             if (strchr((char *)*buffer, '\n') != NULL)
             {
 
@@ -66,7 +73,7 @@ extern "C"
 
             check(sp_wait(device_p->event_set_rx, 1000));
         }
-        // printf("\x1b[32mRecieved string:\033[0m %s\n", (char *)*buffer);
+        // PRINT("\x1b[32mRecieved string:\033[0m %s\n", (char *)*buffer);
         free(current_byte);
     }
 
@@ -74,17 +81,20 @@ extern "C"
     int si_write_line(void *port_device, const char *data, int size, bool wait)
     {
         int result = 0;
-        printf("\x1b[36mWriting string:\033[0m %s\n", data);
+        // PRINT("\x1b[36mWriting string:\033[0m %s\n", data);
         result = check(sp_nonblocking_write(((struct device *)port_device)->port, data, size));
         result += check(sp_nonblocking_write(((struct device *)port_device)->port, &end, 1));
         if (wait)
             check(sp_drain(((struct device *)port_device)->port));
         /* Check whether we sent all of the data. */
         if (result == size + 1)
-            printf("\x1b[32mSent %d bytes successfully.\033[0m\n", size + 1);
+        {
+            PRINT("\x1b[32mSent %d bytes successfully.\033[0m\n", size + 1);
+        }
         else
-            printf("\x1b[31mTimed out, %d/%d bytes sent.\033[0m\n", result, size + 1);
-
+        {
+            PRINT("\x1b[31mTimed out, %d/%d bytes sent.\033[0m\n", result, size + 1);
+        }
         return result;
     }
 
@@ -107,19 +117,19 @@ extern "C"
     int si_print_ports()
     {
 
-        printf("Looking for device...\n");
+        PRINT("Looking for device...\n");
         /* A pointer to a null-terminated array of pointers to
          * struct sp_port, which will contain the ports found.*/
         struct sp_port **port_list;
 
-        printf("Getting port list.\n");
+        PRINT("Getting port list.\n");
         /* Call sp_list_ports() to get the ports. The port_list
          * pointer will be updated to refer to the array created. */
         enum sp_return result = sp_list_ports(&port_list);
 
         if (result != SP_OK)
         {
-            printf("sp_list_ports() failed!\n");
+            PRINT("sp_list_ports() failed!\n");
             return -1;
         }
 
@@ -133,12 +143,12 @@ extern "C"
             /* Get the name of the port. */
             char *port_name = sp_get_port_name(port);
 
-            printf("Found port: %s\n", port_name);
+            PRINT("Found port: %s\n", port_name);
         }
 
-        printf("Found %d ports.\n", i);
+        PRINT("Found %d ports.\n", i);
 
-        printf("Freeing port list.\n");
+        PRINT("Freeing port list.\n");
 
         /* Free the array created by sp_list_ports(). */
         sp_free_port_list(port_list);
@@ -165,7 +175,7 @@ extern "C"
     {
         struct device *p = (struct device *)calloc(1, sizeof(struct device));
         *port_device = p;
-        printf("Allocated Device %p\n", p);
+        PRINT("Allocated Device %p\n", p);
     }
 
     void si_flush_buffer(void *device, int type)
@@ -186,7 +196,7 @@ extern "C"
             break;
         }
         check(sp_flush((struct sp_port *)((struct device *)device)->port, b));
-        printf("Flushing Buffers\n");
+        PRINT("Flushing Buffers\n");
     }
 
     /**
@@ -196,7 +206,7 @@ extern "C"
     {
         struct sp_port *port;
         check(sp_get_port_by_name(port_name, &port));
-        printf("Opening port: '%s'\n", port_name);
+        PRINT("Opening port: '%s'\n", port_name);
 
         // ! THIS IS BAD I KNOW BUT IT WORKS SHUT UP.
         sp_mode temp_mode;
@@ -216,7 +226,7 @@ extern "C"
             break;
         }
         check(sp_open(port, temp_mode));
-        printf("Setting port to %i 8N1, no flow control.\n", baud);
+        PRINT("Setting port to %i 8N1, no flow control.\n", baud);
         check(sp_set_baudrate(port, baud));
         check(sp_set_bits(port, 8));
         check(sp_set_parity(port, SP_PARITY_NONE));
@@ -231,7 +241,7 @@ extern "C"
         struct sp_event_set *event_set_TX;
 
         check(sp_new_event_set(&event_set_TX));
-        // printf("Adding port RX event to event set.\n");
+        // PRINT("Adding port RX event to event set.\n");
         check(sp_add_port_events(event_set_RX, port, SP_EVENT_RX_READY));
         check(sp_add_port_events(event_set_TX, port, SP_EVENT_TX_READY));
         ((struct device *)port_device)->event_set_rx = event_set_RX;
@@ -246,8 +256,8 @@ extern "C"
         struct sp_port *port = ((struct device *)port_device)->port;
 
         /* Display some basic information about the port. */
-        printf("Port name: %s\n", sp_get_port_name(port));
-        printf("Description: %s\n", sp_get_port_description(port));
+        PRINT("Port name: %s\n", sp_get_port_name(port));
+        PRINT("Description: %s\n", sp_get_port_description(port));
 
         /* Identify the transport which this port is connected through,
          * e.g. native port, USB or Bluetooth. */
@@ -257,38 +267,38 @@ extern "C"
         {
             /* This is a "native" port, usually directly connected
              * to the system rather than some external interface. */
-            printf("Type: Native\n");
+            PRINT("Type: Native\n");
         }
         else if (transport == SP_TRANSPORT_USB)
         {
             /* This is a USB to serial converter of some kind. */
-            printf("Type: USB\n");
+            PRINT("Type: USB\n");
 
             /* Display string information from the USB descriptors. */
-            printf("Manufacturer: %s\n", sp_get_port_usb_manufacturer(port));
-            printf("Product: %s\n", sp_get_port_usb_product(port));
-            printf("Serial: %s\n", sp_get_port_usb_serial(port));
+            PRINT("Manufacturer: %s\n", sp_get_port_usb_manufacturer(port));
+            PRINT("Product: %s\n", sp_get_port_usb_product(port));
+            PRINT("Serial: %s\n", sp_get_port_usb_serial(port));
 
             /* Display USB vendor and product IDs. */
             int usb_vid, usb_pid;
             sp_get_port_usb_vid_pid(port, &usb_vid, &usb_pid);
-            printf("VID: %04X PID: %04X\n", usb_vid, usb_pid);
+            PRINT("VID: %04X PID: %04X\n", usb_vid, usb_pid);
 
             /* Display bus and address. */
             int usb_bus, usb_address;
             sp_get_port_usb_bus_address(port, &usb_bus, &usb_address);
-            printf("Bus: %d Address: %d\n", usb_bus, usb_address);
+            PRINT("Bus: %d Address: %d\n", usb_bus, usb_address);
         }
         else if (transport == SP_TRANSPORT_BLUETOOTH)
         {
             /* This is a Bluetooth serial port. */
-            printf("Type: Bluetooth\n");
+            PRINT("Type: Bluetooth\n");
 
             /* Display Bluetooth MAC address. */
-            printf("MAC: %s\n", sp_get_port_bluetooth_address(port));
+            PRINT("MAC: %s\n", sp_get_port_bluetooth_address(port));
         }
 
-        // printf("Freeing port.\n");
+        // PRINT("Freeing port.\n");
 
         // /* Free the port structure created by sp_get_port_by_name(). */
         // sp_free_port(port);
@@ -305,11 +315,11 @@ extern "C"
         struct sp_port *port = (struct sp_port *)device;
 
         /* Display some basic information about the port. */
-        printf("Port name: %s\n", sp_get_port_name(port));
-        printf("Description: %s\n", sp_get_port_description(port));
+        PRINT("Port name: %s\n", sp_get_port_name(port));
+        PRINT("Description: %s\n", sp_get_port_description(port));
 
         /* The port must be open to access its configuration. */
-        // printf("Opening port.\n");
+        // PRINT("Opening port.\n");
         // check(sp_open(port, SP_MODE_READ_WRITE));
 
         /* There are two ways to access a port's configuration:
@@ -344,7 +354,7 @@ extern "C"
          * There are no "default" settings applied by libserialport.
          * When you open a port it has the defaults from the OS or driver,
          * or the settings left over by the last program to use it. */
-        printf("Setting port to 125000 8N1, no flow control.\n");
+        PRINT("Setting port to 125000 8N1, no flow control.\n");
         check(sp_set_baudrate(port, 125000));
         check(sp_set_bits(port, 8));
         check(sp_set_parity(port, SP_PARITY_NONE));
@@ -368,11 +378,11 @@ extern "C"
         check(sp_get_config_bits(initial_config, &bits));
         check(sp_get_config_stopbits(initial_config, &stopbits));
         check(sp_get_config_parity(initial_config, &parity));
-        printf("Baudrate: %d, data bits: %d, parity: %s, stop bits: %d\n",
-               baudrate, bits, parity_name(parity), stopbits);
+        PRINT("Baudrate: %d, data bits: %d, parity: %s, stop bits: %d\n",
+              baudrate, bits, parity_name(parity), stopbits);
 
         /* Create a different configuration to have ready for use. */
-        printf("Creating new config for 9600 7E2, XON/XOFF flow control.\n");
+        PRINT("Creating new config for 9600 7E2, XON/XOFF flow control.\n");
         struct sp_port_config *other_config;
         check(sp_new_config(&other_config));
         check(sp_set_config_baudrate(other_config, 9600));
@@ -382,11 +392,11 @@ extern "C"
         check(sp_set_config_flowcontrol(other_config, SP_FLOWCONTROL_XONXOFF));
 
         /* We can apply the new config to the port in one call. */
-        printf("Applying new configuration.\n");
+        PRINT("Applying new configuration.\n");
         check(sp_set_config(port, other_config));
 
         /* And now switch back to our original config. */
-        printf("Setting port back to previous config.\n");
+        PRINT("Setting port back to previous config.\n");
         check(sp_set_config(port, initial_config));
 
         // /* Now clean up by closing the port and freeing structures. */
